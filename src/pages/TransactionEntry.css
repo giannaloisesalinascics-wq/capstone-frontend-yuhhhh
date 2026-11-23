@@ -1,0 +1,341 @@
+.transaction-page {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 32px 32px 56px;
+  color: var(--text);
+  animation: fade-in 200ms var(--ease) backwards;
+}
+
+/* Two sections side by side on wide screens */
+.transaction-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  align-items: start;
+}
+
+.transaction-section {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-surface);
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
+}
+
+.transaction-section h2 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.section-step {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--brand-50);
+  color: var(--brand-text);
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.transaction-section label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gray-700);
+  margin-bottom: 6px;
+}
+
+.transaction-section input,
+.transaction-section select {
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  margin-bottom: 18px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--bg-surface);
+  color: var(--text);
+  font-size: 14px;
+  box-shadow: var(--shadow-xs);
+  transition: border-color 150ms var(--ease), box-shadow 150ms var(--ease);
+}
+
+.transaction-section select {
+  appearance: none;
+  padding-right: 36px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  cursor: pointer;
+}
+
+.transaction-section input::placeholder {
+  color: var(--gray-400);
+}
+
+.transaction-section input:hover,
+.transaction-section select:hover {
+  border-color: var(--gray-400);
+}
+
+.transaction-section input:focus,
+.transaction-section select:focus {
+  outline: none;
+  border-color: var(--brand-600);
+  box-shadow: var(--ring);
+}
+
+.transaction-section input[readonly] {
+  background: var(--gray-50);
+  color: var(--text-muted);
+  box-shadow: none;
+  cursor: default;
+}
+
+.transaction-section input[readonly]:focus {
+  border-color: var(--border-strong);
+  box-shadow: none;
+}
+
+.transaction-section .alert {
+  margin: -6px 0 18px;
+}
+
+/* Footer action bar spans both columns */
+.transaction-actions {
+  grid-column: 1 / -1;
+  position: sticky;
+  bottom: 16px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 16px;
+  background: var(--surface-glass);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.transaction-actions .alert {
+  margin: 0 auto 0 0;
+  padding: 8px 12px;
+}
+
+.transaction-actions .btn-secondary {
+  background: var(--bg-surface);
+  color: var(--gray-700);
+  border: 1px solid var(--border-strong);
+}
+
+.transaction-actions .btn-secondary:hover {
+  background: var(--gray-50);
+}
+
+/* Premium Quick-Select Buttons */
+.premium-quick-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: -8px;
+  margin-bottom: 20px;
+}
+
+.premium-quick-buttons button {
+  height: 32px;
+  padding: 0 12px;
+  background: var(--bg-surface);
+  color: var(--gray-700);
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  transition: background-color 150ms var(--ease), border-color 150ms var(--ease),
+    color 150ms var(--ease);
+}
+
+.premium-quick-buttons button:hover {
+  background: var(--brand-50);
+  border-color: var(--brand-200);
+  color: var(--brand-text);
+}
+
+/* Register New Client Button */
+.transaction-page .new-client-trigger {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  margin: -8px 0 20px;
+  background: var(--brand-50);
+  color: var(--brand-text);
+  border: 1px solid var(--brand-100);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  transition: background-color 150ms var(--ease), border-color 150ms var(--ease);
+}
+
+.transaction-page .new-client-trigger:hover {
+  background: var(--brand-100);
+  border-color: var(--brand-200);
+}
+
+/* Inline Field Errors & Success Banner */
+.field-error {
+  color: var(--danger-700);
+  font-size: 12px;
+  font-weight: 600;
+  margin: -12px 0 16px;
+}
+
+.transaction-section input[aria-invalid='true'] {
+  border-color: var(--danger-600);
+}
+
+.transaction-success-banner {
+  background: var(--success-50);
+  color: var(--success-700);
+  border: 1px solid var(--success-border);
+  padding: 12px 16px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+.high-premium-warning {
+  color: var(--warning-700);
+  background-color: var(--warning-50);
+  border: 1px solid var(--warning-border);
+  padding: 12px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  margin: 0 0 18px;
+}
+
+/* Designed Warning Dialogs */
+.dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 22, 56, 0.55);
+  backdrop-filter: blur(2px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  z-index: 1100;
+  animation: fade-in 150ms var(--ease) both;
+}
+
+.dialog-box {
+  background: var(--bg-surface);
+  width: 100%;
+  max-width: 440px;
+  padding: 24px;
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  animation: rise-in 200ms var(--ease) both;
+}
+
+.dialog-box h3 {
+  margin: 0 0 10px;
+  color: var(--warning-700);
+  font-size: 18px;
+}
+
+.dialog-box p {
+  margin: 0 0 14px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.dialog-summary {
+  background: var(--gray-50);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.7;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.dialog-btn-secondary {
+  height: 36px;
+  padding: 0 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border-strong);
+  background: var(--bg-surface);
+  color: var(--gray-700);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.dialog-btn-primary {
+  height: 36px;
+  padding: 0 14px;
+  border-radius: var(--radius);
+  border: none;
+  background: var(--brand-700);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.dialog-btn-primary:hover {
+  background: var(--brand-800);
+}
+
+@media (max-width: 960px) {
+  .transaction-form {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .transaction-page {
+    padding: 20px 16px 40px;
+  }
+
+  .transaction-section {
+    padding: 18px;
+  }
+
+  .transaction-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .transaction-actions .alert {
+    margin: 0;
+  }
+
+  .transaction-actions .btn {
+    width: 100%;
+  }
+}

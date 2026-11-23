@@ -1,0 +1,40 @@
+/* Plain-CSS port of the Tailwind classes in Magic UI's Border Beam */
+.border-beam {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  border: calc(var(--border-width) * 1px) solid transparent;
+  mask:
+    linear-gradient(transparent, transparent) padding-box,
+    linear-gradient(#fff, #fff) border-box;
+  -webkit-mask:
+    linear-gradient(transparent, transparent) padding-box,
+    linear-gradient(#fff, #fff) border-box;
+  mask-composite: intersect;
+  -webkit-mask-composite: source-in;
+}
+
+.border-beam::after {
+  content: '';
+  position: absolute;
+  aspect-ratio: 1;
+  width: calc(var(--size) * 1px);
+  background: linear-gradient(to left, var(--color-from), var(--color-to), transparent);
+  offset-anchor: calc(var(--anchor) * 1%) 50%;
+  offset-path: rect(0 auto auto 0 round calc(var(--size) * 1px));
+  animation: border-beam calc(var(--duration) * 1s) infinite linear;
+  animation-delay: var(--delay);
+}
+
+@keyframes border-beam {
+  100% {
+    offset-distance: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .border-beam {
+    display: none;
+  }
+}
