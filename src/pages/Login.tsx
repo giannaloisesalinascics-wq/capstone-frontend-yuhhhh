@@ -1,11 +1,9 @@
-
-import { useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import Icon from '../components/Icon'
-import FloatingPaths from '../components/ui/FloatingPaths'
-import BorderBeam from '../components/ui/BorderBeam'
-import SplitText from '../components/reactbits/SplitText'
+import GoldUniverse, {
+  type UniversePhase,
+} from '../components/ui/GoldUniverse'
 import Magnet from '../components/reactbits/Magnet'
-import GlareHover from '../components/reactbits/GlareHover'
 import './Login.css'
 
 export type UserRole =
@@ -34,266 +32,218 @@ const demoAccounts: Record<
   encoder: { name: 'Demo Encoder', role: 'ENCODER' },
 }
 
+const WORDMARK = 'Richgold'
+const LAUNCH_MS = 1450
+
 function Login({ onLogin }: LoginProps) {
+  const [phase, setPhase] = useState<UniversePhase>('idle')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [message, setMessage] = useState('')
+  const [errorCount, setErrorCount] = useState(0)
+
+  const openButtonRef = useRef<HTMLButtonElement>(null)
+  const usernameRef = useRef<HTMLInputElement>(null)
+  const hasOpenedRef = useRef(false)
+  const launchTimerRef = useRef<number | undefined>(undefined)
+
+  useEffect(() => () => window.clearTimeout(launchTimerRef.current), [])
+
+  // Move focus with the scene, and let Escape back out of the form
+  useEffect(() => {
+    if (phase === 'form') {
+      hasOpenedRef.current = true
+      usernameRef.current?.focus({ preventScroll: true })
+
+      const onKeyDown = (event: KeyboardEvent) => {
+        if (event.key === 'Escape') setPhase('idle')
+      }
+      window.addEventListener('keydown', onKeyDown)
+      return () => window.removeEventListener('keydown', onKeyDown)
+    }
+    if (phase === 'idle' && hasOpenedRef.current) {
+      openButtonRef.current?.focus({ preventScroll: true })
+    }
+  }, [phase])
 
   function handleLogin(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
+    if (phase !== 'form') return
 
     const normalizedUsername = username.trim().toLowerCase()
     const account = demoAccounts[normalizedUsername]
 
     if (!account || password !== 'demo123') {
       setMessage('Invalid demo username or password.')
+      setErrorCount((count) => count + 1)
       return
     }
 
-    onLogin({
+    const user: DemoUser = {
       username: normalizedUsername,
       name: account.name,
       role: account.role,
-    })
+    }
+
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      onLogin(user)
+      return
+    }
+
+    setPhase('launch')
+    launchTimerRef.current = window.setTimeout(() => onLogin(user), LAUNCH_MS)
   }
 
   return (
-    <main className="login-page">
-      {/* Brand panel */}
-      <section className="login-hero" aria-hidden="true">
-        <span className="login-orb login-orb-gold" />
-        <span className="login-orb login-orb-blue" />
-        <FloatingPaths position={-1} className="login-paths" />
+    <main className="login-page" data-phase={phase}>
+      <div className="login-glow" aria-hidden="true" />
+      <GoldUniverse phase={phase} errorCount={errorCount} />
 
-        <div className="login-hero-inner">
-          <div className="login-hero-brand">
-            <span className="brand-logo">R</span>
-            <span>
-              <strong>Richgold</strong>
-              <small>Insurance Agency</small>
-            </span>
-          </div>
-
-          <div className="login-hero-copy">
-            <p className="login-eyebrow">
-              <span className="login-eyebrow-dot" />
-              RIA Management System
-            </p>
-            <h1>
-              Renewals, clients and agents, <em>in one place.</em>
-            </h1>
-            <p>
-              Sales optimization and prescriptive tasking for the
-              corporate renewal season.
-            </p>
-          </div>
-
-          {/* Product preview */}
-          <div className="login-preview">
-            <GlareHover
-              className="login-preview-glare"
-              width="100%"
-              borderRadius="18px"
-              glareColor="#f0cf6e"
-              glareOpacity={0.35}
-              glareSize={35}
-              transitionDuration={900}
+      <section className="login-intro" inert={phase !== 'idle'}>
+        <p className="login-agency">Insurance Agency</p>
+        <h1 className="login-wordmark" aria-label={WORDMARK}>
+          {[...WORDMARK].map((letter, index) => (
+            <span
+              key={index}
+              aria-hidden="true"
+              style={{ animationDelay: `${700 + index * 75}ms` }}
             >
-            <div className="login-preview-card">
-              <BorderBeam size={120} duration={9} borderWidth={1.5} />
-              <div className="login-preview-head">
-                <span>
-                  <small>Season 2026</small>
-                  <strong>Renewal progress</strong>
-                </span>
-                <span className="login-preview-ring">
-                  <svg viewBox="0 0 36 36">
-                    <circle cx="18" cy="18" r="15.5" className="ring-track" />
-                    <circle cx="18" cy="18" r="15.5" className="ring-fill" />
-                  </svg>
-                  <b>76%</b>
-                </span>
-              </div>
+              {letter}
+            </span>
+          ))}
+        </h1>
+        <p className="login-tagline">RIA Management System</p>
 
-              <div className="login-preview-bars">
-                {[34, 52, 44, 61, 78, 100].map((height, index) => (
-                  <i
-                    key={index}
-                    style={{
-                      height: `${height}%`,
-                      animationDelay: `${300 + index * 70}ms`,
-                    }}
-                  />
-                ))}
-              </div>
-
-              <div className="login-preview-task">
-                <span className="login-preview-task-tag">P1</span>
-                <span>
-                  <strong>ABC Properties Inc.</strong>
-                  <small>At-risk retention · window closes in 9 days</small>
-                </span>
-              </div>
-            </div>
-            </GlareHover>
-
-            <div className="login-preview-float">
-              <Icon name="trending" size={16} />
-              <span>
-                <strong>+18.5%</strong>
-                <small>vs last season</small>
-              </span>
-            </div>
-          </div>
-
-          <ul className="login-features">
-            <li>
-              <Icon name="trending" size={18} />
-              Renewal forecasting & lapse-risk scoring
-            </li>
-            <li>
-              <Icon name="tasks" size={18} />
-              Prioritized daily tasks for every agent
-            </li>
-            <li>
-              <Icon name="pie" size={18} />
-              Client segmentation & season analytics
-            </li>
-          </ul>
-
-          <p className="login-hero-footer">
-            On-premise deployment · Data stays on the agency's server
-          </p>
+        <div className="login-enter">
+          <Magnet padding={60} magnetStrength={5} maxOffset={14}>
+            <button
+              ref={openButtonRef}
+              type="button"
+              className="login-gold-btn"
+              onClick={() => setPhase('form')}
+            >
+              <span>Login</span>
+              <Icon name="arrowRight" size={18} />
+            </button>
+          </Magnet>
         </div>
       </section>
 
-      {/* Sign-in form */}
-      <section className="login-form-column">
-        <div className="login-card">
-          <div className="login-mobile-brand">
-            <span className="brand-logo">R</span>
-            <strong>Richgold Insurance Agency</strong>
-          </div>
+      <section
+        className="login-portal"
+        aria-labelledby="login-title"
+        inert={phase !== 'form'}
+      >
+        <div
+          className="login-panel"
+          data-shake={errorCount ? (errorCount % 2 ? 'a' : 'b') : undefined}
+        >
+          <button
+            type="button"
+            className="login-back"
+            onClick={() => setPhase('idle')}
+            aria-label="Close login form"
+          >
+            <Icon name="x" size={18} />
+          </button>
 
-          <SplitText
-            tag="h2"
-            text="Welcome back"
-            splitType="chars"
-            effect="rise"
-            delay={40}
-            duration={0.9}
-            trigger="load"
-            textAlign="left"
-          />
-          <p className="login-subtitle">
-            Sign in to access the RIA Management System.
-          </p>
+          <h2 id="login-title" className="login-title">
+            Welcome back
+          </h2>
 
           <form onSubmit={handleLogin}>
             <div className="login-field">
-              <label htmlFor="username" className="field-label">
-                Username
-              </label>
+              <label htmlFor="username">Username</label>
               <div className="login-input">
                 <Icon name="user" size={18} />
                 <input
+                  ref={usernameRef}
                   id="username"
                   type="text"
-                  className="control"
                   value={username}
                   onChange={(e) => {
                     setUsername(e.target.value)
                     setMessage('')
                   }}
-                  placeholder="Enter username"
                   autoComplete="username"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  aria-invalid={Boolean(message)}
+                  aria-describedby={message ? 'login-error' : undefined}
                   required
                 />
               </div>
             </div>
 
             <div className="login-field">
-              <label htmlFor="password" className="field-label">
-                Password
-              </label>
+              <label htmlFor="password">Password</label>
               <div className="login-input">
                 <Icon name="lock" size={18} />
                 <input
                   id="password"
-                  type="password"
-                  className="control"
+                  type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => {
                     setPassword(e.target.value)
                     setMessage('')
                   }}
-                  placeholder="Enter password"
                   autoComplete="current-password"
+                  aria-invalid={Boolean(message)}
+                  aria-describedby={message ? 'login-error' : undefined}
                   required
                 />
+                <button
+                  type="button"
+                  className="login-reveal"
+                  onClick={() => setShowPassword((shown) => !shown)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? 'Hide' : 'Show'}
+                </button>
               </div>
             </div>
 
             {message && (
-              <p role="alert" className="alert alert-danger">
+              <p id="login-error" role="alert" className="login-error">
                 <Icon name="alert" size={16} />
                 {message}
               </p>
             )}
 
-            <Magnet
-              padding={40}
-              magnetStrength={8}
-              maxOffset={6}
-              wrapperClassName="login-magnet"
-              style={{ display: 'block' }}
-            >
-              <button type="submit" className="btn btn-primary btn-lg btn-block">
-                Sign in
-                <Icon name="arrowRight" size={16} className="login-submit-arrow" />
-              </button>
-            </Magnet>
+            <button type="submit" className="login-gold-btn login-submit">
+              <span>{phase === 'launch' ? 'Logging in…' : 'Login'}</span>
+              <Icon name="arrowRight" size={18} />
+            </button>
           </form>
 
           <div className="login-demo">
-            <div className="login-demo-header">
-              <Icon name="info" size={16} />
-              <strong>Demo mode</strong>
+            <p>
+              Demo accounts, password <code>demo123</code>
+            </p>
+            <div className="login-demo-chips">
+              {Object.keys(demoAccounts).map((name) => (
+                <button
+                  key={name}
+                  type="button"
+                  onClick={() => {
+                    setUsername(name)
+                    setPassword('demo123')
+                    setMessage('')
+                  }}
+                >
+                  {name}
+                </button>
+              ))}
             </div>
-            <dl>
-              <div>
-                <dt>Users</dt>
-                <dd>
-                  {Object.keys(demoAccounts).map((name) => (
-                    <button
-                      key={name}
-                      type="button"
-                      className="login-demo-chip"
-                      onClick={() => {
-                        setUsername(name)
-                        setPassword('demo123')
-                        setMessage('')
-                      }}
-                    >
-                      {name}
-                    </button>
-                  ))}
-                </dd>
-              </div>
-              <div>
-                <dt>Password</dt>
-                <dd>
-                  <code>demo123</code>
-                </dd>
-              </div>
-            </dl>
           </div>
         </div>
-
-        <p className="login-legal">
-          © {new Date().getFullYear()} Richgold Insurance Agency
-        </p>
       </section>
+
+      <p className="login-legal">
+        © {new Date().getFullYear()} Richgold Insurance Agency
+      </p>
+      <div className="login-flash" aria-hidden="true" />
     </main>
   )
 }
