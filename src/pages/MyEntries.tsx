@@ -1,10 +1,15 @@
 import { useState } from 'react'
 import Icon from '../components/Icon'
+import { peso } from '../format'
+import {
+  updateTransaction,
+  useClients,
+  useTransactions,
+  type PaymentStatus,
+} from '../data/records'
 import './Dashboard.css'
 
-type PaymentStatus = 'PAID' | 'UNPAID' | 'CANCELLED' | 'UNKNOWN'
-
-type EncoderEntry = {
+type EntryRecord = {
   id: number
   txnDate: string
   client: string
@@ -15,41 +20,6 @@ type EncoderEntry = {
   logbookPage: string
 }
 
-const initialEntries: EncoderEntry[] = [
-  {
-    id: 1,
-    txnDate: '2026-01-22',
-    client: 'ABC Properties Inc.',
-    branch: 'Greenbelt 5 BR',
-    premium: 8500,
-    paymentStatus: 'PAID',
-    primaryAgent: 'Maria Santos',
-    logbookPage: 'p. 64',
-  },
-  {
-    id: 2,
-    txnDate: '2026-01-22',
-    client: 'Golden Harvest Foods',
-    branch: 'Makati Main',
-    premium: 3198,
-    paymentStatus: 'UNPAID',
-    primaryAgent: 'Carlo Reyes',
-    logbookPage: 'p. 64',
-  },
-  {
-    id: 3,
-    txnDate: '2026-01-21',
-    client: 'Blue Ocean Retail',
-    branch: 'Salcedo Village',
-    premium: 1122,
-    paymentStatus: 'PAID',
-    primaryAgent: 'Angela Cruz',
-    logbookPage: 'p. 63',
-  },
-]
-
-const peso = (value: number) => `₱${value.toLocaleString('en-PH')}`
-
 const paymentBadge: Record<PaymentStatus, string> = {
   PAID: 'badge-success',
   UNPAID: 'badge-warning',
@@ -57,8 +27,28 @@ const paymentBadge: Record<PaymentStatus, string> = {
   UNKNOWN: 'badge-neutral',
 }
 
-function MyEntries() {
-  const [entries, setEntries] = useState<EncoderEntry[]>(initialEntries)
+function MyEntries({ currentUsername }: { currentUsername?: string }) {
+  const clients = useClients()
+  const transactions = useTransactions()
+
+  // Transactions the signed-in user encoded, newest first
+  const entries: EntryRecord[] = transactions
+    .filter((t) => t.encodedBy === currentUsername)
+    .sort((a, b) => b.txnDate.localeCompare(a.txnDate) || b.id - a.id)
+    .map((t) => {
+      const client = clients.find((c) => c.id === t.clientId)
+      return {
+        id: t.id,
+        txnDate: t.txnDate,
+        client: client?.name ?? 'Unknown client',
+        branch: client?.branch,
+        premium: t.premium,
+        paymentStatus: t.paymentStatus,
+        primaryAgent: t.primaryAgent,
+        logbookPage: t.logbookPage ?? '—',
+      }
+    })
+
   const [search, setSearch] = useState('')
   const [editingId, setEditingId] = useState<number | null>(null)
   const [editPremium, setEditPremium] = useState('')
@@ -77,11 +67,11 @@ function MyEntries() {
     )
   })
 
-  function startEdit(entry: EncoderEntry) {
+  function startEdit(entry: EntryRecord) {
     setEditingId(entry.id)
     setEditPremium(String(entry.premium))
     setEditStatus(entry.paymentStatus)
-    setEditPage(entry.logbookPage)
+    setEditPage(entry.logbookPage === '—' ? '' : entry.logbookPage)
     setNotice('')
   }
 
@@ -89,20 +79,13 @@ function MyEntries() {
     const parsedPremium = Number(editPremium)
     if (Number.isNaN(parsedPremium) || parsedPremium <= 0) return
 
-    setEntries((prev) =>
-      prev.map((entry) =>
-        entry.id === id
-          ? {
-              ...entry,
-              premium: parsedPremium,
-              paymentStatus: editStatus,
-              logbookPage: editPage.trim() || entry.logbookPage,
-            }
-          : entry
-      )
-    )
+    updateTransaction(id, {
+      premium: parsedPremium,
+      paymentStatus: editStatus,
+      logbookPage: editPage.trim() || undefined,
+    })
     setEditingId(null)
-    setNotice('Entry updated in local sample data.')
+    setNotice('Entry updated. The client’s history reflects the change.')
   }
 
   return (
@@ -111,12 +94,12 @@ function MyEntries() {
         <div>
           <small>Sales Optimization & Prescriptive Tasking</small>
           <h1>My Entries</h1>
-          <p>Review transactions you encoded and fix typos if needed.</p>
+          <p>Review transactions you entered and fix typos if needed.</p>
         </div>
       </header>
 
       <p className="sample-banner">
-        Edits are stored locally until backend integration.
+        Entries and edits are saved in this browser and shared with Clients until backend integration.
       </p>
 
       {notice && (
@@ -264,7 +247,9 @@ function MyEntries() {
         {filteredEntries.length === 0 && (
           <div className="empty-state">
             <Icon name="search" size={28} />
-            No entries match your search.
+            {entries.length === 0
+              ? 'You haven’t encoded any transactions yet. Saved transactions from Transaction Entry appear here.'
+              : 'No entries match your search.'}
           </div>
         )}
       </section>

@@ -4,32 +4,20 @@ import GoldUniverse, {
   type UniversePhase,
 } from '../components/ui/GoldUniverse'
 import Magnet from '../components/reactbits/Magnet'
+import {
+  authenticate,
+  DEMO_PASSWORD,
+  DEMO_USERNAMES,
+  type SessionUser,
+  type UserRole as AccountRole,
+} from '../accounts'
 import './Login.css'
 
-export type UserRole =
-  | 'ADMIN'
-  | 'MANAGER'
-  | 'AGENT'
-  | 'ENCODER'
-
-export type DemoUser = {
-  username: string
-  name: string
-  role: UserRole
-}
+export type UserRole = AccountRole
+export type DemoUser = SessionUser
 
 type LoginProps = {
   onLogin: (user: DemoUser) => void
-}
-
-const demoAccounts: Record<
-  string,
-  { name: string; role: UserRole }
-> = {
-  admin: { name: 'Demo Administrator', role: 'ADMIN' },
-  manager: { name: 'Demo Manager', role: 'MANAGER' },
-  agent: { name: 'Demo Agent', role: 'AGENT' },
-  encoder: { name: 'Demo Encoder', role: 'ENCODER' },
 }
 
 const WORDMARK = 'Richgold'
@@ -42,6 +30,7 @@ function Login({ onLogin }: LoginProps) {
   const [showPassword, setShowPassword] = useState(false)
   const [message, setMessage] = useState('')
   const [errorCount, setErrorCount] = useState(0)
+  const [checking, setChecking] = useState(false)
 
   const openButtonRef = useRef<HTMLButtonElement>(null)
   const usernameRef = useRef<HTMLInputElement>(null)
@@ -67,24 +56,21 @@ function Login({ onLogin }: LoginProps) {
     }
   }, [phase])
 
-  function handleLogin(e: FormEvent<HTMLFormElement>) {
+  async function handleLogin(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    if (phase !== 'form') return
+    if (phase !== 'form' || checking) return
 
-    const normalizedUsername = username.trim().toLowerCase()
-    const account = demoAccounts[normalizedUsername]
+    setChecking(true)
+    const result = await authenticate(username, password)
+    setChecking(false)
 
-    if (!account || password !== 'demo123') {
-      setMessage('Invalid demo username or password.')
+    if (!result.ok) {
+      setMessage(result.error)
       setErrorCount((count) => count + 1)
       return
     }
 
-    const user: DemoUser = {
-      username: normalizedUsername,
-      name: account.name,
-      role: account.role,
-    }
+    const user = result.user
 
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
       onLogin(user)
@@ -212,23 +198,23 @@ function Login({ onLogin }: LoginProps) {
             )}
 
             <button type="submit" className="login-gold-btn login-submit">
-              <span>{phase === 'launch' ? 'Logging in…' : 'Login'}</span>
+              <span>{phase === 'launch' || checking ? 'Logging in…' : 'Login'}</span>
               <Icon name="arrowRight" size={18} />
             </button>
           </form>
 
           <div className="login-demo">
             <p>
-              Demo accounts, password <code>demo123</code>
+              Demo accounts, password <code>{DEMO_PASSWORD}</code>
             </p>
             <div className="login-demo-chips">
-              {Object.keys(demoAccounts).map((name) => (
+              {DEMO_USERNAMES.map((name) => (
                 <button
                   key={name}
                   type="button"
                   onClick={() => {
                     setUsername(name)
-                    setPassword('demo123')
+                    setPassword(DEMO_PASSWORD)
                     setMessage('')
                   }}
                 >

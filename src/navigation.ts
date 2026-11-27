@@ -7,10 +7,9 @@ export type NavItem = {
   end?: boolean
 }
 
-const encoderLinks: NavItem[] = [
-  { to: '/encode', label: 'Transaction Entry', icon: 'filePlus', end: true },
-  { to: '/encode/entries', label: 'My Entries', icon: 'fileText' },
-  { to: '/encode/clients', label: 'Client Search', icon: 'search' },
+const dataEntryLinks: NavItem[] = [
+  { to: '/manage/entry', label: 'Transaction Entry', icon: 'filePlus', end: true },
+  { to: '/manage/entries', label: 'My Entries', icon: 'fileText' },
 ]
 
 const analyticsLinks: NavItem[] = [
@@ -28,16 +27,18 @@ const adminLinks: NavItem[] = [
   { to: '/admin/backups', label: 'Backup Status', icon: 'database' },
 ]
 
-type Role = 'ADMIN' | 'MANAGER' | 'ENCODER' | 'AGENT'
+type Role = 'ADMIN' | 'MANAGER' | 'AGENT'
 
 export type NavGroupDef = { label: string; links: NavItem[] }
 
 // Menu groups each role can see (shared by the sidebar and the command palette)
 export function getNavGroups(role: Role): NavGroupDef[] {
-  if (role === 'ENCODER') return [{ label: 'Data Entry', links: encoderLinks }]
   if (role === 'AGENT') return [{ label: 'My Work', links: [{ to: '/agent', label: "Today's Tasks", icon: 'tasks', end: true }] }]
 
-  const groups = [{ label: 'Analytics', links: analyticsLinks }]
+  const groups = [
+    { label: 'Analytics', links: analyticsLinks },
+    { label: 'Data Entry', links: dataEntryLinks },
+  ]
   if (role === 'ADMIN') groups.push({ label: 'Administration', links: adminLinks })
   return groups
 }

@@ -29,14 +29,14 @@ import ClickSpark from './components/reactbits/ClickSpark'
 import { openCommandPalette } from './commandPaletteEvents'
 import { toast } from './toast'
 import { toggleTheme, useTheme } from './theme'
+import { getInitials } from './format'
 import './App.css'
 
 // Default page for each role
 const homeRoutes: Record<UserRole, string> = {
-  ADMIN: '/admin',
+  ADMIN: '/manage',
   MANAGER: '/manage',
   AGENT: '/agent',
-  ENCODER: '/encode',
 }
 
 // Protect routes based on the user's role
@@ -62,16 +62,6 @@ const roleLabels: Record<UserRole, string> = {
   ADMIN: 'Administrator',
   MANAGER: 'Manager',
   AGENT: 'Agent',
-  ENCODER: 'Encoder',
-}
-
-function getInitials(name: string) {
-  return name
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join('')
 }
 
 function ThemeToggle() {
@@ -167,7 +157,7 @@ function WorkspaceHeader({
   )
 }
 
-// Sidebar workspace (Manager, Admin, and Encoder)
+// Sidebar workspace (Manager and Admin)
 function SidebarLayout({
   user,
   onLogout,
@@ -284,8 +274,10 @@ function App() {
             <Route path="/manage/forecast" element={<RenewalForecast />} />
             <Route
               path="/manage/clients"
-              element={<Clients showProbabilities />}
+              element={<Clients />}
             />
+            <Route path="/manage/entry" element={<TransactionEntry currentUsername={user?.username} />} />
+            <Route path="/manage/entries" element={<MyEntries currentUsername={user?.username} />} />
           </Route>
         </Route>
 
@@ -310,10 +302,10 @@ function App() {
               )
             }
           >
-            <Route path="/admin" element={<Dashboard userName={user?.name} />} />
+            <Route path="/admin" element={<Navigate to="/manage" replace />} />
             <Route
               path="/admin/users"
-              element={<AdminPanel section="users" />}
+              element={<AdminPanel section="users" currentUsername={user?.username} />}
             />
             <Route
               path="/admin/agents"
@@ -354,36 +346,6 @@ function App() {
             <Route
               path="/agent"
               element={<AgentTasks agentName={user?.name} />}
-            />
-          </Route>
-        </Route>
-
-        {/* Encoder Routes */}
-        <Route
-          element={
-            <ProtectedRoute
-              user={user}
-              allowedRoles={['ENCODER']}
-            />
-          }
-        >
-          <Route
-            element={
-              user ? (
-                <SidebarLayout
-                  user={user}
-                  onLogout={handleLogout}
-                />
-              ) : (
-                <Navigate to="/" replace />
-              )
-            }
-          >
-            <Route path="/encode" element={<TransactionEntry />} />
-            <Route path="/encode/entries" element={<MyEntries />} />
-            <Route
-              path="/encode/clients"
-              element={<Clients showProbabilities={false} />}
             />
           </Route>
         </Route>

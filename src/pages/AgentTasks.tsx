@@ -8,6 +8,7 @@ import BorderBeam from '../components/ui/BorderBeam'
 import { toast } from '../toast'
 import SplitText from '../components/reactbits/SplitText'
 import AnimatedContent from '../components/reactbits/AnimatedContent'
+import { getGreeting } from '../format'
 import './AgentTasks.css'
 
 type AgentTask = {
@@ -64,13 +65,6 @@ const sampleTasks: AgentTask[] = [
     isNewAccount: true,
   },
 ]
-
-function getGreeting() {
-  const hour = new Date().getHours()
-  if (hour < 12) return 'Good morning'
-  if (hour < 18) return 'Good afternoon'
-  return 'Good evening'
-}
 
 function AgentTasks({ agentName = 'Carlo' }: AgentTasksProps) {
   const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null)

@@ -1032,7 +1032,7 @@
 
 .dash-hero-mini {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   margin-top: 6px;
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.08);

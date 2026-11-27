@@ -2,84 +2,9 @@
 import { useState } from 'react'
 import Icon from '../components/Icon'
 import './Dashboard.css'
-import { TASK_TYPE_META, type TaskType } from '../constants/taskTypes'
-
-type TaskStatus = 'OPEN' | 'ASSIGNED' | 'DONE'
-
-
-
-type Task = {
-  id: number
-  client: string
-  taskType: TaskType
-  priority: number
-  status: TaskStatus
-  agent: string | null
-  windowEnd: string
-}
-
-const sampleTasks: Task[] = [
-  {
-    id: 1,
-    client: 'ABC Properties Inc.',
-    taskType: 'AT_RISK',
-    priority: 1,
-    status: 'ASSIGNED',
-    agent: 'Maria Santos',
-    windowEnd: '2027-01-31',
-  },
-  {
-    id: 2,
-    client: 'Golden Harvest Foods',
-    taskType: 'RENEWAL_CALL',
-    priority: 2,
-    status: 'OPEN',
-    agent: null,
-    windowEnd: '2027-01-31',
-  },
-  {
-    id: 3,
-    client: 'Metro Realty Corp.',
-    taskType: 'RENEWAL_CALL',
-    priority: 3,
-    status: 'DONE',
-    agent: 'Carlo Reyes',
-    windowEnd: '2027-01-31',
-  },
-  {
-    id: 4,
-    client: 'Summit Trading Inc.',
-    taskType: 'AT_RISK',
-    priority: 1,
-    status: 'ASSIGNED',
-    agent: 'Angela Cruz',
-    windowEnd: '2027-01-31',
-  },
-  {
-    id: 5,
-    client: 'Greenfield Services',
-    taskType: 'MONITOR',
-    priority: 3,
-    status: 'OPEN',
-    agent: null,
-    windowEnd: '2027-01-31',
-  },
-  {
-    id: 6,
-    client: 'Blue Ocean Retail',
-    taskType: 'RENEWAL_CALL',
-    priority: 2,
-    status: 'DONE',
-    agent: 'Maria Santos',
-    windowEnd: '2027-01-31',
-  },
-]
-
-const sampleAgents = [
-  { id: 1, name: 'Maria Santos' },
-  { id: 2, name: 'Carlo Reyes' },
-  { id: 3, name: 'Angela Cruz' },
-]
+import { TASK_TYPE_META } from '../constants/taskTypes'
+import { sampleTasks, type TaskStatus } from '../data/sampleTasks'
+import { useAgents } from '../accounts'
 
 const statusBadges: Record<TaskStatus, { label: string; className: string }> = {
   OPEN: { label: 'Open', className: 'badge-neutral' },
@@ -96,6 +21,7 @@ function getLocalDate() {
 }
 
 function TasksAdmin() {
+  const agents = useAgents().filter((a) => a.isActive)
   const [statusFilter, setStatusFilter] = useState('ALL')
   const [typeFilter, setTypeFilter] = useState('ALL')
   const [selectedDate, setSelectedDate] = useState(getLocalDate)
@@ -150,8 +76,8 @@ function TasksAdmin() {
       </header>
 
       <p className="sample-banner">
-        Task records and agent availability are sample data for
-        demonstration only.
+        Task records are sample data for demonstration only. Agents come
+        from active agent accounts.
       </p>
 
       {/* TASK SUMMARY */}
@@ -321,7 +247,7 @@ function TasksAdmin() {
           </thead>
 
           <tbody>
-            {sampleAgents.map((agent) => {
+            {agents.map((agent) => {
               const key = `${selectedDate}-${agent.id}`
               const isAvailable = availability[key] ?? true
 

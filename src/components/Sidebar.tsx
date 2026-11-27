@@ -4,7 +4,7 @@ import { getNavGroups, type NavItem } from '../navigation'
 import './Sidebar.css'
 
 type SidebarProps = {
-  role: 'ADMIN' | 'MANAGER' | 'ENCODER' | 'AGENT'
+  role: 'ADMIN' | 'MANAGER' | 'AGENT'
 }
 
 function NavGroup({ label, links }: { label: string; links: NavItem[] }) {

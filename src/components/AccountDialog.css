@@ -1,0 +1,237 @@
+/* Account create / edit / reset dialog (builds on NewClientForm.css) */
+.account-dialog {
+  max-width: 520px;
+}
+
+.account-dialog input:disabled {
+  background: var(--bg-subtle);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+.account-dialog input[aria-invalid='true'] {
+  border-color: var(--danger-600);
+}
+
+.account-hint,
+.account-error {
+  font-size: 12px;
+  margin: -10px 0 16px;
+}
+
+.account-hint {
+  color: var(--text-muted);
+}
+
+.account-error {
+  color: var(--danger-700);
+  font-weight: 600;
+}
+
+.account-form-error {
+  margin: 0 0 16px;
+}
+
+/* Role picker */
+.account-roles {
+  border: 0;
+  padding: 0;
+  margin: 0 0 18px;
+  display: grid;
+  gap: 8px;
+}
+
+.account-roles legend {
+  color: var(--gray-700);
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  padding: 0;
+}
+
+.new-client-panel .account-role {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-weight: 400;
+  transition: border-color 150ms var(--ease), background-color 150ms var(--ease);
+}
+
+.account-role:hover {
+  border-color: var(--gray-400);
+}
+
+.account-role.is-selected {
+  border-color: var(--brand-600);
+  background: var(--brand-50);
+}
+
+.account-role:focus-within {
+  box-shadow: var(--ring);
+}
+
+.new-client-panel .account-role input {
+  width: 16px;
+  height: 16px;
+  margin: 2px 0 0;
+  padding: 0;
+  flex: none;
+  box-shadow: none;
+  accent-color: var(--brand-600);
+}
+
+.account-role span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.account-role strong {
+  color: var(--text);
+  font-size: 14px;
+}
+
+.account-role small {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+/* Password field */
+.account-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.account-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 0;
+  background: none;
+  padding: 0;
+  margin-bottom: 6px;
+  color: var(--brand-600);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.account-link:hover {
+  text-decoration: underline;
+}
+
+.account-password {
+  position: relative;
+}
+
+.new-client-panel .account-password input {
+  padding-right: 64px;
+  margin-bottom: 8px;
+}
+
+.account-reveal {
+  position: absolute;
+  right: 6px;
+  top: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--bg-subtle);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.account-strength {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 14px;
+  min-height: 14px;
+}
+
+.account-strength span {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--gray-200);
+  transition: background-color 150ms var(--ease);
+}
+
+.account-strength em {
+  min-width: 48px;
+  text-align: right;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.account-strength[data-level='1'] span:nth-child(-n + 1) { background: var(--warning-600); }
+.account-strength[data-level='2'] span:nth-child(-n + 2) { background: var(--brand-600); }
+.account-strength[data-level='3'] span:nth-child(-n + 3) { background: var(--success-600); }
+
+/* Success step */
+.account-done {
+  display: flex;
+  flex-direction: column;
+}
+
+.account-done-icon {
+  display: inline-flex;
+  width: 48px;
+  height: 48px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--success-50);
+  color: var(--success-700);
+  margin-bottom: 14px;
+}
+
+.account-done > p {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin: 0 0 18px;
+}
+
+.account-credentials {
+  margin: 0 0 20px;
+  padding: 4px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-subtle);
+}
+
+.account-credentials div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 0;
+}
+
+.account-credentials div + div {
+  border-top: 1px solid var(--border);
+}
+
+.account-credentials dt {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.account-credentials dd {
+  margin: 0;
+  color: var(--text);
+  font-weight: 600;
+  user-select: all;
+  word-break: break-all;
+}

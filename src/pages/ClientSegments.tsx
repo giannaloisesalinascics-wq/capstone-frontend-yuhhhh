@@ -1,5 +1,6 @@
 
 import { useState, type CSSProperties } from 'react'
+import { peso } from '../format'
 import './Dashboard.css'
 
 type Client = {
@@ -46,8 +47,6 @@ const clients: Client[] = [
   { id: 9, name: 'Eastpoint Ventures', premium: 2244, seasons: 1, segment: 'new' },
 ]
 
-const peso = (value: number) =>
-  `₱${value.toLocaleString('en-PH')}`
 
 function ClientSegments() {
   const [selectedSegment, setSelectedSegment] = useState('all')

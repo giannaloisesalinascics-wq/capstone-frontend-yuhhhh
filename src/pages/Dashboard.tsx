@@ -7,6 +7,7 @@ import SplitText from '../components/reactbits/SplitText'
 import Magnet from '../components/reactbits/Magnet'
 import GlareHover from '../components/reactbits/GlareHover'
 import AnimatedContent from '../components/reactbits/AnimatedContent'
+import { getGreeting, getInitials, peso } from '../format'
 import './Dashboard.css'
 
 type SeasonStats = {
@@ -97,26 +98,10 @@ const agents = [
   { name: 'Angela Cruz', completed: 5, assigned: 7 },
 ]
 
-const peso = (value: number) => `₱${value.toLocaleString('en-PH')}`
-
 const shortPeso = (value: number) =>
   value >= 1000000
     ? `₱${(value / 1000000).toFixed(2)}M`
     : `₱${Math.round(value / 1000)}k`
-
-const initials = (name: string) =>
-  name
-    .split(' ')
-    .map((part) => part[0])
-    .join('')
-    .slice(0, 2)
-
-function greeting() {
-  const hour = new Date().getHours()
-  if (hour < 12) return 'Good morning'
-  if (hour < 18) return 'Good afternoon'
-  return 'Good evening'
-}
 
 // Smooth curve through points (Catmull-Rom converted to cubic Béziers)
 function smoothPath(points: { x: number; y: number }[]) {
@@ -532,7 +517,7 @@ function AgentLeaderboard() {
           <li key={agent.name} className={`leader leader-${index + 1}`}>
             <span className="leader-rank">{index + 1}</span>
             <span className="person-avatar" aria-hidden="true">
-              {initials(agent.name)}
+              {getInitials(agent.name)}
             </span>
             <span className="leader-name">
               <strong>{agent.name}</strong>
@@ -595,7 +580,7 @@ function Dashboard({ userName }: { userName?: string }) {
           <h1>
             <SplitText
               tag="span"
-              text={`${greeting()},`}
+              text={`${getGreeting()},`}
               splitType="chars"
               effect="rise"
               delay={30}
@@ -648,12 +633,6 @@ function Dashboard({ userName }: { userName?: string }) {
             <span>
               <small>Closed today</small>
               <strong>{peso(current.closedToday)}</strong>
-            </span>
-            <span>
-              <small>Tasks done</small>
-              <strong>
-                {current.tasksDone}/{current.tasksDone + current.tasksOpen}
-              </strong>
             </span>
           </div>
         </div>
@@ -719,20 +698,6 @@ function Dashboard({ userName }: { userName?: string }) {
           </svg>
         </div>
         </GlareHover>
-
-        <div className="kpi-card">
-          <div className="kpi-card-top">
-            <p>Clients Renewed / Due</p>
-            <span className="kpi-icon kpi-icon-success">
-              <Icon name="refresh" />
-            </span>
-          </div>
-          <h2>
-            <CountUp value={current.clientsRenewed} />
-            <span className="kpi-of"> / {current.clientsDue.toLocaleString('en-PH')}</span>
-          </h2>
-          <span className="kpi-sub">{renewalRate}% renewal rate</span>
-        </div>
 
         <div className="kpi-card">
           <div className="kpi-card-top">

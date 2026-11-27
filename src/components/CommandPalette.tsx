@@ -6,7 +6,7 @@ import { toggleTheme, useTheme } from '../theme'
 import { OPEN_PALETTE_EVENT } from '../commandPaletteEvents'
 import './CommandPalette.css'
 
-type Role = 'ADMIN' | 'MANAGER' | 'ENCODER' | 'AGENT'
+type Role = 'ADMIN' | 'MANAGER' | 'AGENT'
 
 type Command = {
   id: string

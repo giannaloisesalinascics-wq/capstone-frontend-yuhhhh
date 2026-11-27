@@ -1,23 +1,19 @@
-import { useState, type FormEvent } from 'react'
+import { useMemo, useState } from 'react'
 import Icon from '../components/Icon'
+import AccountDialog, { type AccountDialogMode } from '../components/AccountDialog'
+import {
+  ROLE_INFO,
+  setAccountActive,
+  useAccounts,
+  useAgents,
+  type PublicAccount,
+  type UserRole,
+} from '../accounts'
+import { toast } from '../toast'
+import { openTaskCount } from '../data/sampleTasks'
 import './Dashboard.css'
 
 export type AdminSection = 'users' | 'agents' | 'models' | 'backups'
-
-type UserAccount = {
-  id: number
-  username: string
-  name: string
-  role: 'ADMIN' | 'MANAGER' | 'AGENT' | 'ENCODER'
-  isActive: boolean
-}
-
-type AgentRecord = {
-  id: number
-  displayName: string
-  openTasks: number
-  isActive: boolean
-}
 
 type ModelRun = {
   runId: string
@@ -37,18 +33,22 @@ type BackupRecord = {
   status: 'Verified' | 'Completed'
 }
 
-const initialUsers: UserAccount[] = [
-  { id: 1, username: 'admin', name: 'Demo Administrator', role: 'ADMIN', isActive: true },
-  { id: 2, username: 'manager', name: 'Demo Manager', role: 'MANAGER', isActive: true },
-  { id: 3, username: 'encoder', name: 'Demo Encoder', role: 'ENCODER', isActive: true },
-  { id: 4, username: 'agent', name: 'Demo Agent', role: 'AGENT', isActive: true },
-]
+const roleBadge: Record<UserRole, string> = {
+  ADMIN: 'badge-gold',
+  MANAGER: 'badge-brand',
+  AGENT: 'badge-neutral',
+}
 
-const initialAgents: AgentRecord[] = [
-  { id: 1, displayName: 'Maria Santos', openTasks: 8, isActive: true },
-  { id: 2, displayName: 'Carlo Reyes', openTasks: 5, isActive: true },
-  { id: 3, displayName: 'Angela Cruz', openTasks: 7, isActive: true },
-]
+function formatDate(iso: string | null) {
+  if (!iso) return 'Never'
+  return new Date(iso).toLocaleString('en-PH', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+}
 
 const initialRuns: ModelRun[] = [
   {
@@ -88,16 +88,38 @@ const initialBackups: BackupRecord[] = [
   },
 ]
 
-function AdminPanel({ section }: { section: AdminSection }) {
-  // Users state
-  const [users, setUsers] = useState<UserAccount[]>(initialUsers)
-  const [newUsername, setNewUsername] = useState('')
-  const [newFullName, setNewFullName] = useState('')
-  const [newRole, setNewRole] = useState<UserAccount['role']>('AGENT')
+function AdminPanel({
+  section,
+  currentUsername,
+}: {
+  section: AdminSection
+  currentUsername?: string
+}) {
+  // Users state (shared account store, persisted locally)
+  const users = useAccounts()
+  const [dialog, setDialog] = useState<AccountDialogMode | null>(null)
+  const [userQuery, setUserQuery] = useState('')
+  const [roleFilter, setRoleFilter] = useState<UserRole | 'ALL'>('ALL')
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL')
 
-  // Agents state
-  const [agents, setAgents] = useState<AgentRecord[]>(initialAgents)
-  const [newAgentName, setNewAgentName] = useState('')
+  const filteredUsers = useMemo(() => {
+    const q = userQuery.trim().toLowerCase()
+    return users.filter(
+      (u) =>
+        (roleFilter === 'ALL' || u.role === roleFilter) &&
+        (statusFilter === 'ALL' || (statusFilter === 'ACTIVE') === u.isActive) &&
+        (!q || `${u.name} ${u.username} ${u.email}`.toLowerCase().includes(q)),
+    )
+  }, [users, userQuery, roleFilter, statusFilter])
+
+  const roleCounts = useMemo(() => {
+    const counts: Record<UserRole, number> = { ADMIN: 0, MANAGER: 0, AGENT: 0 }
+    users.forEach((u) => u.isActive && counts[u.role]++)
+    return counts
+  }, [users])
+
+  // Agents are the AGENT-role accounts
+  const agents = useAgents()
 
   // Model runs state
   const [runs, setRuns] = useState<ModelRun[]>(initialRuns)
@@ -108,65 +130,20 @@ function AdminPanel({ section }: { section: AdminSection }) {
   // Shared status notice
   const [notice, setNotice] = useState('')
 
-  function handleAddUser(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-    if (!newUsername.trim() || !newFullName.trim()) return
-
-    setUsers((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        username: newUsername.trim().toLowerCase(),
-        name: newFullName.trim(),
-        role: newRole,
-        isActive: true,
-      },
-    ])
-    setNewUsername('')
-    setNewFullName('')
-    setNotice('User account added to local sample data.')
-  }
-
-  function toggleUser(id: number) {
-    setUsers((prev) =>
-      prev.map((u) => (u.id === id ? { ...u, isActive: !u.isActive } : u))
-    )
-  }
-
-  function handleAddAgent(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-    if (!newAgentName.trim()) return
-
-    setAgents((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        displayName: newAgentName.trim(),
-        openTasks: 0,
-        isActive: true,
-      },
-    ])
-    setNewAgentName('')
-    setNotice('Agent added to local sample data.')
-  }
-
-  function toggleAgent(id: number) {
-    setAgents((prev) =>
-      prev.map((a) => {
-        if (a.id !== id) return a
-        const nextActive = !a.isActive
-        setNotice(
-          nextActive
-            ? `${a.displayName} reactivated.`
-            : `${a.displayName} deactivated — open tasks returned to the pool.`
-        )
-        return {
-          ...a,
-          isActive: nextActive,
-          openTasks: nextActive ? a.openTasks : 0,
-        }
-      })
-    )
+  function toggleUser(u: PublicAccount) {
+    const result = setAccountActive(u.id, !u.isActive, currentUsername)
+    if (!result.ok) {
+      toast('Can’t change this account', { description: result.error, variant: 'warning' })
+      return
+    }
+    toast(u.isActive ? 'Account deactivated' : 'Account reactivated', {
+      description: u.isActive
+        ? u.role === 'AGENT' && openTaskCount(u.name) > 0
+          ? `${u.name} can no longer sign in. Their open tasks return to the pool.`
+          : `${u.name} can no longer sign in.`
+        : `${u.name} can sign in again.`,
+      variant: u.isActive ? 'info' : 'success',
+    })
   }
 
   function handleRetrain() {
@@ -217,13 +194,26 @@ function AdminPanel({ section }: { section: AdminSection }) {
           <p>
             {section === 'users' && 'Create and manage system accounts and role access.'}
             {section === 'agents' &&
-              'Add or deactivate freelance agents. Deactivating returns open tasks to the pool.'}
+              'Freelance agent accounts and their workload. Deactivating returns open tasks to the pool.'}
             {section === 'models' &&
               'Compare K-Means, Logistic Regression, and Decision Tree scoring runs.'}
             {section === 'backups' &&
               'Monitor local PostgreSQL pg_dump backups (14-day retention).'}
           </p>
         </div>
+
+        {(section === 'users' || section === 'agents') && (
+          <div className="dashboard-header-actions">
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => setDialog(section === 'agents' ? { kind: 'create', role: 'AGENT' } : { kind: 'create' })}
+            >
+              <Icon name="plus" size={16} />
+              {section === 'agents' ? 'New Agent' : 'New Account'}
+            </button>
+          </div>
+        )}
 
         {section === 'models' && (
           <div className="dashboard-header-actions">
@@ -245,7 +235,9 @@ function AdminPanel({ section }: { section: AdminSection }) {
       </header>
 
       <p className="sample-banner">
-        Admin actions run in local demo state until backend integration.
+        {section === 'users' || section === 'agents'
+          ? 'Accounts are saved in this browser and used by the login screen until backend integration.'
+          : 'Admin actions run in local demo state until backend integration.'}
       </p>
 
       {notice && (
@@ -257,150 +249,208 @@ function AdminPanel({ section }: { section: AdminSection }) {
 
       {/* USERS & ROLES */}
       {section === 'users' && (
-        <>
-          <section className="dashboard-panel">
-            <h2>Add User Account</h2>
-            <p>New accounts are active immediately and can sign in with their assigned role.</p>
-            <form onSubmit={handleAddUser} className="inline-form">
-              <input
-                type="text"
-                className="control"
-                placeholder="Username"
-                aria-label="Username"
-                value={newUsername}
-                onChange={(e) => setNewUsername(e.target.value)}
-                required
-              />
-              <input
-                type="text"
-                className="control control-grow"
-                placeholder="Full Name"
-                aria-label="Full name"
-                value={newFullName}
-                onChange={(e) => setNewFullName(e.target.value)}
-                required
-              />
-              <select
-                className="control"
-                aria-label="Role"
-                value={newRole}
-                onChange={(e) => setNewRole(e.target.value as UserAccount['role'])}
-              >
-                <option value="AGENT">AGENT</option>
-                <option value="ENCODER">ENCODER</option>
-                <option value="MANAGER">MANAGER</option>
-                <option value="ADMIN">ADMIN</option>
-              </select>
-              <button type="submit" className="btn btn-primary">
-                <Icon name="plus" size={16} />
-                Add User
-              </button>
-            </form>
-          </section>
-
-          <section className="dashboard-panel">
+        <section className="dashboard-panel">
+          <div className="panel-header">
             <h2>System Accounts</h2>
-            <p>{users.length} accounts</p>
-            <table>
-              <thead>
-                <tr>
-                  <th>Username</th>
-                  <th>Name</th>
-                  <th>Role</th>
-                  <th>Status</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {users.map((u) => (
+            <p>
+              {roleCounts.ADMIN} active admin{roleCounts.ADMIN === 1 ? '' : 's'} · {roleCounts.MANAGER} manager
+              {roleCounts.MANAGER === 1 ? '' : 's'} · {roleCounts.AGENT} agent{roleCounts.AGENT === 1 ? '' : 's'}
+            </p>
+          </div>
+
+          <div className="toolbar">
+            <label className="search-field">
+              <Icon name="search" size={16} />
+              <input
+                type="search"
+                className="control"
+                placeholder="Search name, username or email"
+                aria-label="Search accounts"
+                value={userQuery}
+                onChange={(e) => setUserQuery(e.target.value)}
+              />
+            </label>
+            <select
+              className="control"
+              aria-label="Filter by role"
+              value={roleFilter}
+              onChange={(e) => setRoleFilter(e.target.value as UserRole | 'ALL')}
+            >
+              <option value="ALL">All roles</option>
+              <option value="ADMIN">Administrators</option>
+              <option value="MANAGER">Managers</option>
+              <option value="AGENT">Agents</option>
+            </select>
+            <select
+              className="control"
+              aria-label="Filter by status"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
+            >
+              <option value="ALL">Any status</option>
+              <option value="ACTIVE">Active</option>
+              <option value="INACTIVE">Inactive</option>
+            </select>
+            <span className="toolbar-count">
+              {filteredUsers.length} of {users.length} accounts
+            </span>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Username</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Last sign-in</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredUsers.map((u) => {
+                const isSelf = u.username === currentUsername
+                return (
                   <tr key={u.id}>
-                    <td className="cell-mono"><strong>{u.username}</strong></td>
-                    <td>{u.name}</td>
                     <td>
-                      <span className="badge badge-neutral">{u.role}</span>
+                      <strong>{u.name}</strong>
+                      {isSelf && <span className="badge badge-success" style={{ marginLeft: 8 }}>You</span>}
+                      {u.email && <span className="cell-sub">{u.email}</span>}
+                    </td>
+                    <td className="cell-mono">{u.username}</td>
+                    <td>
+                      <span className={`badge ${roleBadge[u.role]}`}>{ROLE_INFO[u.role].label}</span>
                     </td>
                     <td>
                       <span className={`badge badge-dot ${u.isActive ? 'badge-success' : 'badge-danger'}`}>
                         {u.isActive ? 'Active' : 'Inactive'}
                       </span>
                     </td>
+                    <td>{formatDate(u.lastLoginAt)}</td>
                     <td>
-                      <button
-                        type="button"
-                        className="btn btn-secondary btn-sm"
-                        onClick={() => toggleUser(u.id)}
-                      >
-                        {u.isActive ? 'Deactivate' : 'Activate'}
-                      </button>
+                      <div className="cell-actions">
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-sm"
+                          onClick={() => setDialog({ kind: 'edit', account: u })}
+                          aria-label={`Edit ${u.name}`}
+                        >
+                          <Icon name="pencil" size={14} />
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-sm"
+                          onClick={() => setDialog({ kind: 'reset', account: u })}
+                          aria-label={`Reset password for ${u.name}`}
+                        >
+                          <Icon name="lock" size={14} />
+                          Reset
+                        </button>
+                        {!isSelf && (
+                          <button
+                            type="button"
+                            className={`btn btn-sm ${u.isActive ? 'btn-danger-soft' : 'btn-success-soft'}`}
+                            onClick={() => toggleUser(u)}
+                          >
+                            {u.isActive ? 'Deactivate' : 'Activate'}
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </section>
-        </>
+                )
+              })}
+            </tbody>
+          </table>
+          {filteredUsers.length === 0 && (
+            <div className="empty-state">
+              <Icon name="search" size={28} />
+              No accounts match these filters.
+            </div>
+          )}
+        </section>
+      )}
+
+      {dialog && (
+        <AccountDialog
+          key={dialog.kind + ('account' in dialog ? dialog.account.id : '')}
+          mode={dialog}
+          actingUsername={currentUsername}
+          onClose={() => setDialog(null)}
+        />
       )}
 
       {/* AGENTS */}
       {section === 'agents' && (
-        <>
-          <section className="dashboard-panel">
-            <h2>Add Freelance Agent</h2>
-            <p>Agents become available for task assignment right away.</p>
-            <form onSubmit={handleAddAgent} className="inline-form">
-              <input
-                type="text"
-                className="control control-grow"
-                placeholder="Agent Display Name"
-                aria-label="Agent display name"
-                value={newAgentName}
-                onChange={(e) => setNewAgentName(e.target.value)}
-                required
-              />
-              <button type="submit" className="btn btn-primary">
-                <Icon name="plus" size={16} />
-                Add Agent
-              </button>
-            </form>
-          </section>
-
-          <section className="dashboard-panel">
+        <section className="dashboard-panel">
+          <div className="panel-header">
             <h2>Registered Agents</h2>
-            <p>{agents.length} agents</p>
-            <table>
-              <thead>
-                <tr>
-                  <th>Agent Name</th>
-                  <th className="cell-num">Open Tasks</th>
-                  <th>Status</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {agents.map((a) => (
+            <p>
+              {agents.filter((a) => a.isActive).length} active of {agents.length} · agents sign in with these accounts
+              and appear in task assignment and transaction entry.
+            </p>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Agent</th>
+                <th>Username</th>
+                <th className="cell-num">Open Tasks</th>
+                <th>Status</th>
+                <th>Last sign-in</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {agents.map((a) => {
+                const open = a.isActive ? openTaskCount(a.name) : 0
+                return (
                   <tr key={a.id}>
-                    <td><strong>{a.displayName}</strong></td>
-                    <td className="cell-num">{a.openTasks}</td>
+                    <td>
+                      <strong>{a.name}</strong>
+                      {a.email && <span className="cell-sub">{a.email}</span>}
+                    </td>
+                    <td className="cell-mono">{a.username}</td>
+                    <td className="cell-num">{open}</td>
                     <td>
                       <span className={`badge badge-dot ${a.isActive ? 'badge-success' : 'badge-danger'}`}>
                         {a.isActive ? 'Active' : 'Deactivated'}
                       </span>
                     </td>
+                    <td>{formatDate(a.lastLoginAt)}</td>
                     <td>
-                      <button
-                        type="button"
-                        className={`btn btn-sm ${a.isActive ? 'btn-danger-soft' : 'btn-success-soft'}`}
-                        onClick={() => toggleAgent(a.id)}
-                      >
-                        {a.isActive ? 'Deactivate' : 'Reactivate'}
-                      </button>
+                      <div className="cell-actions">
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-sm"
+                          onClick={() => setDialog({ kind: 'edit', account: a })}
+                          aria-label={`Edit ${a.name}`}
+                        >
+                          <Icon name="pencil" size={14} />
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          className={`btn btn-sm ${a.isActive ? 'btn-danger-soft' : 'btn-success-soft'}`}
+                          onClick={() => toggleUser(a)}
+                        >
+                          {a.isActive ? 'Deactivate' : 'Reactivate'}
+                        </button>
+                      </div>
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </section>
-        </>
+                )
+              })}
+            </tbody>
+          </table>
+          {agents.length === 0 && (
+            <div className="empty-state">
+              <Icon name="users" size={28} />
+              No agent accounts yet. Use “New Agent” to create one.
+            </div>
+          )}
+        </section>
       )}
 
       {/* MODEL RUNS */}

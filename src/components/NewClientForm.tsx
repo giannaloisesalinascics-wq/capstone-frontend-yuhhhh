@@ -1,6 +1,7 @@
 
 import { useState, type FormEvent } from 'react'
 
+import { SECTORS as sectors } from '../data/records'
 import './NewClientForm.css'
 
 
@@ -15,16 +16,6 @@ type NewClientFormProps = {
   onCancel: () => void
 }
 
-const sectors = [
-  'Real estate / property',
-  'Food & hospitality',
-  'Health & wellness',
-  'Finance & holdings',
-  'Trading & retail',
-  'Construction & industrial',
-  'Services & professional',
-  'Other',
-]
 
 function NewClientForm({
   onSave,

@@ -1,6 +1,7 @@
 
 import { useState } from 'react'
 import Icon from '../components/Icon'
+import { peso } from '../format'
 import './Dashboard.css'
 
 type RiskBand = 'High' | 'Moderate' | 'Low'
@@ -246,7 +247,7 @@ function RenewalForecast() {
                   </td>
 
                   <td className="cell-num">
-                    ₱{client.premium.toLocaleString('en-PH')}
+                    {peso(client.premium)}
                   </td>
 
                   <td className="cell-num">{client.seasons}</td>

@@ -1,120 +1,35 @@
 import { useState } from 'react'
 import Icon from '../components/Icon'
+import { peso } from '../format'
+import {
+  clientStats,
+  useClients,
+  useTransactions,
+  type PaymentStatus,
+} from '../data/records'
 import './Dashboard.css'
 
-type ClientTxn = {
-  date: string
-  premium: number
-  status: 'PAID' | 'UNPAID' | 'CANCELLED' | 'UNKNOWN'
-  agent: string
-  logbookPage: string
-}
-
-type ClientRecord = {
-  id: number
-  name: string
-  branch?: string
-  sector: string
-  seasons: number
-  lastPremium: number
-  pLapse: number
-  contactPerson?: string
-  phone?: string
-  transactions: ClientTxn[]
-}
-
-type ClientsProps = {
-  showProbabilities?: boolean
-}
-
-const sampleClients: ClientRecord[] = [
-  {
-    id: 1,
-    name: 'ABC Properties Inc.',
-    branch: 'Greenbelt 5 BR',
-    sector: 'Real estate / property',
-    seasons: 4,
-    lastPremium: 8500,
-    pLapse: 0.85,
-    contactPerson: 'Elena Mendoza',
-    phone: '0917-555-0142',
-    transactions: [
-      { date: '2026-01-14', premium: 8500, status: 'PAID', agent: 'Maria Santos', logbookPage: 'p. 42' },
-      { date: '2025-01-12', premium: 8500, status: 'PAID', agent: 'Carlo Reyes', logbookPage: 'p. 19' },
-    ],
-  },
-  {
-    id: 2,
-    name: 'Golden Harvest Foods',
-    branch: 'Makati Main',
-    sector: 'Food & hospitality',
-    seasons: 3,
-    lastPremium: 3198,
-    pLapse: 0.76,
-    contactPerson: 'Ramon Villanueva',
-    phone: '0918-555-0198',
-    transactions: [
-      { date: '2026-01-18', premium: 3198, status: 'PAID', agent: 'Maria Santos', logbookPage: 'p. 55' },
-      { date: '2025-01-20', premium: 3198, status: 'PAID', agent: 'Angela Cruz', logbookPage: 'p. 31' },
-    ],
-  },
-  {
-    id: 3,
-    name: 'Summit Trading Inc.',
-    sector: 'Trading & retail',
-    seasons: 2,
-    lastPremium: 2244,
-    pLapse: 0.62,
-    transactions: [
-      { date: '2026-01-09', premium: 2244, status: 'UNPAID', agent: 'Angela Cruz', logbookPage: 'p. 27' },
-    ],
-  },
-  {
-    id: 4,
-    name: 'Blue Ocean Retail',
-    branch: 'Salcedo Village',
-    sector: 'Trading & retail',
-    seasons: 1,
-    lastPremium: 1122,
-    pLapse: 0.38,
-    transactions: [
-      { date: '2026-01-22', premium: 1122, status: 'PAID', agent: 'Carlo Reyes', logbookPage: 'p. 63' },
-    ],
-  },
-  {
-    id: 5,
-    name: 'Metro Realty Corp.',
-    branch: 'Ayala Ave',
-    sector: 'Real estate / property',
-    seasons: 5,
-    lastPremium: 5600,
-    pLapse: 0.22,
-    contactPerson: 'Liza Tan',
-    phone: '0917-555-0881',
-    transactions: [
-      { date: '2026-01-05', premium: 5600, status: 'PAID', agent: 'Carlo Reyes', logbookPage: 'p. 11' },
-      { date: '2025-01-07', premium: 5600, status: 'PAID', agent: 'Carlo Reyes', logbookPage: 'p. 08' },
-    ],
-  },
-]
-
-const peso = (value: number) => `₱${value.toLocaleString('en-PH')}`
-
-const paymentBadge: Record<ClientTxn['status'], string> = {
+const paymentBadge: Record<PaymentStatus, string> = {
   PAID: 'badge-success',
   UNPAID: 'badge-warning',
   CANCELLED: 'badge-danger',
   UNKNOWN: 'badge-neutral',
 }
 
-function Clients({ showProbabilities = false }: ClientsProps) {
+function Clients() {
+  const clientList = useClients()
+  const transactions = useTransactions()
   const [search, setSearch] = useState('')
   const [sectorFilter, setSectorFilter] = useState('ALL')
   const [selectedClientId, setSelectedClientId] = useState<number | null>(null)
 
-  const sectors = Array.from(new Set(sampleClients.map((c) => c.sector)))
+  const clients = clientList
+    .map((c) => ({ ...c, ...clientStats(c.id, transactions) }))
+    .sort((a, b) => a.name.localeCompare(b.name))
 
-  const filteredClients = sampleClients.filter((client) => {
+  const sectors = Array.from(new Set(clients.map((c) => c.sector))).sort()
+
+  const filteredClients = clients.filter((client) => {
     const query = search.trim().toLowerCase()
     const matchesSearch =
       !query ||
@@ -128,7 +43,10 @@ function Clients({ showProbabilities = false }: ClientsProps) {
     return matchesSearch && matchesSector
   })
 
-  const selectedClient = sampleClients.find((c) => c.id === selectedClientId)
+  const selectedClient = clients.find((c) => c.id === selectedClientId)
+  const selectedHistory = transactions
+    .filter((t) => t.clientId === selectedClientId)
+    .sort((a, b) => b.txnDate.localeCompare(a.txnDate))
 
   return (
     <div className="dashboard-page">
@@ -141,7 +59,7 @@ function Clients({ showProbabilities = false }: ClientsProps) {
       </header>
 
       <p className="sample-banner">
-        Client directory and history are sample data for demonstration only.
+        Clients and transaction history are shared with Transaction Entry and My Entries, saved in this browser until backend integration.
       </p>
 
       <section className="dashboard-panel">
@@ -184,13 +102,13 @@ function Clients({ showProbabilities = false }: ClientsProps) {
               <th>Industry Sector</th>
               <th className="cell-num">Seasons</th>
               <th className="cell-num">Last Premium</th>
-              {showProbabilities && <th>Lapse Risk</th>}
+              <th>Lapse Risk</th>
               <th>Action</th>
             </tr>
           </thead>
           <tbody>
             {filteredClients.map((client) => {
-              const lapsePct = Math.round(client.pLapse * 100)
+              const lapsePct = client.pLapse === null ? null : Math.round(client.pLapse * 100)
               const isSelected = selectedClientId === client.id
 
               return (
@@ -206,26 +124,32 @@ function Clients({ showProbabilities = false }: ClientsProps) {
                   </td>
                   <td>{client.sector}</td>
                   <td className="cell-num">{client.seasons}</td>
-                  <td className="cell-num">{peso(client.lastPremium)}</td>
-                  {showProbabilities && (
-                    <td>
-                      <div className="meter">
-                        <div className="meter-track">
-                          <div
-                            className={`meter-fill ${
-                              lapsePct >= 70
-                                ? 'meter-fill-danger'
-                                : lapsePct >= 40
-                                  ? 'meter-fill-warning'
-                                  : 'meter-fill-success'
-                            }`}
-                            style={{ width: `${lapsePct}%` }}
-                          />
-                        </div>
-                        <span className="meter-value">{lapsePct}%</span>
+                  <td className="cell-num">
+                    {client.lastPremium === null ? <span className="cell-sub">No transactions</span> : peso(client.lastPremium)}
+                  </td>
+                  <td>
+                    {lapsePct === null ? (
+                      <span className="badge badge-brand" title="Not enough history for a model score yet">
+                        New Account · Cold Start
+                      </span>
+                    ) : (
+                    <div className="meter">
+                      <div className="meter-track">
+                        <div
+                          className={`meter-fill ${
+                            lapsePct >= 70
+                              ? 'meter-fill-danger'
+                              : lapsePct >= 40
+                                ? 'meter-fill-warning'
+                                : 'meter-fill-success'
+                          }`}
+                          style={{ width: `${lapsePct}%` }}
+                        />
                       </div>
-                    </td>
-                  )}
+                      <span className="meter-value">{lapsePct}%</span>
+                    </div>
+                    )}
+                  </td>
                   <td>
                     <button
                       type="button"
@@ -299,21 +223,27 @@ function Clients({ showProbabilities = false }: ClientsProps) {
               </tr>
             </thead>
             <tbody>
-              {selectedClient.transactions.map((txn, idx) => (
-                <tr key={idx}>
-                  <td>{txn.date}</td>
+              {selectedHistory.map((txn) => (
+                <tr key={txn.id}>
+                  <td>{txn.txnDate}</td>
                   <td className="cell-num">{peso(txn.premium)}</td>
                   <td>
-                    <span className={`badge ${paymentBadge[txn.status]}`}>
-                      {txn.status}
+                    <span className={`badge ${paymentBadge[txn.paymentStatus]}`}>
+                      {txn.paymentStatus}
                     </span>
                   </td>
-                  <td>{txn.agent}</td>
-                  <td>{txn.logbookPage}</td>
+                  <td>{txn.primaryAgent}</td>
+                  <td>{txn.logbookPage ?? '—'}</td>
                 </tr>
               ))}
             </tbody>
           </table>
+          {selectedHistory.length === 0 && (
+            <div className="empty-state">
+              <Icon name="fileText" size={28} />
+              No transactions recorded for this client yet.
+            </div>
+          )}
         </section>
       )}
     </div>
